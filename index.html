@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REACT 臨床推論レベル評価ツール</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1976d2;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #64b5f6;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+        .info-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            color: #64b5f6;
+            border-bottom: 3px solid #64b5f6;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .domain-section {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+        .domain-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .domain-title {
+            font-size: 1.3em;
+            color: #333;
+            font-weight: bold;
+        }
+        .domain-subtitle {
+            font-size: 0.9em;
+            color: #666;
+            margin-left: 10px;
+        }
+        .score-display {
+            font-size: 1.5em;
+            color: #64b5f6;
+            font-weight: bold;
+        }
+        .criteria-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .criteria-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .criteria-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .criteria-card.selected {
+            border-color: #64b5f6;
+            background: #e3f2fd;
+        }
+        .criteria-score {
+            display: inline-block;
+            background: #64b5f6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .criteria-card.selected .criteria-score {
+            background: #1976d2;
+        }
+        .criteria-text {
+            font-size: 0.9em;
+            color: #333;
+            line-height: 1.5;
+        }
+        .total-score-section {
+            background: linear-gradient(135deg, #90caf9 0%, #81c784 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .total-score-label {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .total-score-value {
+            font-size: 3em;
+            font-weight: bold;
+        }
+        .chart-container {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .comparison-card {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+        }
+        .comparison-card h3 {
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: white;
+            margin-bottom: 8px;
+            border-radius: 5px;
+        }
+        .score-change {
+            font-weight: bold;
+        }
+        .score-change.positive {
+            color: #27ae60;
+        }
+        .score-change.negative {
+            color: #e74c3c;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: #64b5f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #42a5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(100, 181, 246, 0.4);
+        }
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        /* スマホ対応（768px以下） */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+                border-radius: 15px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            .subtitle {
+                font-size: 0.85em;
+            }
+            .info-box {
+                padding: 12px;
+                font-size: 0.9em;
+            }
+            .tab-container {
+                gap: 5px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .tab {
+                padding: 10px 15px;
+                font-size: 0.85em;
+                white-space: nowrap;
+            }
+            .domain-section {
+                padding: 15px;
+            }
+            .domain-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .domain-title {
+                font-size: 1.1em;
+            }
+            .domain-subtitle {
+                margin-left: 0;
+                font-size: 0.85em;
+                display: block;
+            }
+            .score-display {
+                font-size: 1.2em;
+            }
+            .criteria-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .criteria-card {
+                padding: 12px;
+            }
+            .criteria-text {
+                font-size: 0.85em;
+            }
+            .total-score-section {
+                padding: 20px;
+            }
+            .total-score-label {
+                font-size: 1em;
+            }
+            .total-score-value {
+                font-size: 2.5em;
+            }
+            .chart-container {
+                padding: 15px;
+            }
+            .comparison-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .comparison-card {
+                padding: 15px;
+            }
+            .score-item {
+                font-size: 0.9em;
+                padding: 8px;
+            }
+            .button-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .btn {
+                width: 100%;
+                padding: 15px 20px;
+            }
+        }
+
+        /* さらに小さい画面（480px以下） */
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.3em;
+            }
+            .subtitle {
+                font-size: 0.8em;
+            }
+            .tab {
+                padding: 8px 12px;
+                font-size: 0.8em;
+            }
+            .domain-title {
+                font-size: 1em;
+            }
+            .total-score-value {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>REACT 臨床推論レベル評価ツール</h1>
+        <p class="subtitle">Rapid Evaluation Assessment of Clinical Reasoning Tool</p>
+
+        <div class="info-box">
+            <h3>📋 評価方法</h3>
+            <p>各ドメインについて、現在のあなたの臨床推論レベルに最も近い項目を選択してください。</p>
+            <p>スコアは1-3点の3段階で、合計スコアは5点（最小）〜15点（最大）となります。</p>
+        </div>
+
+        <div class="tab-container">
+            <button class="tab active" onclick="switchTab('before')">Before評価（初回）</button>
+            <button class="tab" onclick="switchTab('after')">After評価（3ヶ月後）</button>
+            <button class="tab" onclick="switchTab('comparison')">比較結果</button>
+        </div>
+
+        <!-- Before評価タブ -->
+        <div id="before-tab" class="tab-content active">
+            <h2 style="color: #1976d2; margin-bottom: 20px;">Before評価（プログラム開始時）</h2>
+            <div id="before-assessment"></div>
+            <div class="total-score-section">
+                <div class="total-score-label">合計スコア</div>
+                <div class="total-score-value" id="before-total">0 / 15</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="before-chart"></canvas>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="saveBeforeScore()">Before評価を保存</button>
+                <button class="btn btn-secondary" onclick="exportBeforeCSV()">CSVエクスポート</button>
+            </div>
+        </div>
+
+        <!-- After評価タブ -->
+        <div id="after-tab" class="tab-content">
+            <h2 style="color: #1976d2; margin-bottom: 20px;">After評価（プログラム終了時）</h2>
+            <div id="after-assessment"></div>
+            <div class="total-score-section">
+                <div class="total-score-label">合計スコア</div>
+                <div class="total-score-value" id="after-total">0 / 15</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="after-chart"></canvas>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-success" onclick="saveAfterScore()">After評価を保存</button>
+                <button class="btn btn-secondary" onclick="exportAfterCSV()">CSVエクスポート</button>
+            </div>
+        </div>
+
+        <!-- 比較タブ -->
+        <div id="comparison-tab" class="tab-content">
+            <h2 style="color: #1976d2; margin-bottom: 20px;">Before / After 比較</h2>
+            <div class="comparison-container">
+                <div class="comparison-card">
+                    <h3>スコア比較</h3>
+                    <div id="score-comparison"></div>
+                </div>
+                <div class="comparison-card">
+                    <h3>成長サマリー</h3>
+                    <div id="growth-summary"></div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="comparison-chart"></canvas>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="exportComparisonReport()">比較レポート出力</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const domains = [
+            {
+                id: 'collecting',
+                title: 'Collecting（収集）',
+                subtitle: 'データ収集 - 仮説志向型の情報収集',
+                criteria: [
+                    { score: 1, text: '仮説志向型の情報収集ができていない。無関係な情報を含む。文脈的な手がかりを認識していない。' },
+                    { score: 2, text: '仮説に関連したデータを収集できるが、一部無関係な情報も含む。文脈的な手がかりの認識が限定的。' },
+                    { score: 3, text: '仮説志向型のデータ収集が的確にできる。文脈的な手がかりを認識し、緊急性を判断できる。' }
+                ]
+            },
+            {
+                id: 'interpreting',
+                title: 'Interpreting（解釈）',
+                subtitle: '診断推論 - 鑑別診断の生成',
+                criteria: [
+                    { score: 1, text: '鑑別診断が不適切または欠如している。緊急状況で不適切な診断をする。' },
+                    { score: 2, text: '鑑別診断に主要な診断が含まれているが、重要な診断を見逃すこともある。優先順位付けが不適切。' },
+                    { score: 3, text: '鑑別診断が正確で、可能性の高い順にランク付けできる。緊急状況での診断が適切。' }
+                ]
+            },
+            {
+                id: 'managing',
+                title: 'Managing（管理）',
+                subtitle: 'マネジメント推論 - 評価と治療計画',
+                criteria: [
+                    { score: 1, text: '評価と治療が不適切な診断に向けられている。初期介入への反応を評価していない。' },
+                    { score: 2, text: '主要診断に対する評価・治療はあるが、緊急性の低い診断に焦点を当てがち。初期介入への反応評価が限定的。' },
+                    { score: 3, text: '最も可能性の高い緊急診断に対して効率的な評価・治療を実施。初期介入への反応を評価できる。' }
+                ]
+            },
+            {
+                id: 'communicating',
+                title: 'Communicating（コミュニケーション）',
+                subtitle: '患者中心のケア - 医療チームとの連携',
+                criteria: [
+                    { score: 1, text: '医療チームとの連携ができていない。治療計画の説明が不十分。患者の目標を考慮していない。' },
+                    { score: 2, text: '医療チームとの連携が限定的。治療計画の説明が不完全。患者の目標の理解・確認が不十分。' },
+                    { score: 3, text: '役割に応じて医療チームと効果的に連携。治療計画を明確に説明。患者・家族の目標を理解・確認できる。' }
+                ]
+            },
+            {
+                id: 'reflecting',
+                title: 'Reflecting（省察）',
+                subtitle: 'メタ認知 - 臨床場面の振り返り',
+                criteria: [
+                    { score: 1, text: '意思決定に影響した認知的・感情的要因に気づいていない。それらの要因を軽減できない。' },
+                    { score: 2, text: '認知的・感情的要因への気づきが限定的。それらの要因を軽減する取り組みが限定的。' },
+                    { score: 3, text: '認知的・感情的要因を十分に認識している。それらの要因を効果的に軽減できる。' }
+                ]
+            }
+        ];
+
+        let beforeScores = {};
+        let afterScores = {};
+        let beforeChart = null;
+        let afterChart = null;
+        let comparisonChart = null;
+
+        // 初期化
+        function init() {
+            createAssessment('before');
+            createAssessment('after');
+            loadSavedScores();
+            updateAllCharts();
+        }
+
+        // 評価フォームの作成
+        function createAssessment(type) {
+            const container = document.getElementById(`${type}-assessment`);
+            container.innerHTML = '';
+
+            domains.forEach(domain => {
+                const section = document.createElement('div');
+                section.className = 'domain-section';
+                section.innerHTML = `
+                    <div class="domain-header">
+                        <div>
+                            <span class="domain-title">${domain.title}</span>
+                            <span class="domain-subtitle">${domain.subtitle}</span>
+                        </div>
+                        <div class="score-display" id="${type}-${domain.id}-score">未選択</div>
+                    </div>
+                    <div class="criteria-grid" id="${type}-${domain.id}-grid"></div>
+                `;
+                container.appendChild(section);
+
+                const grid = document.getElementById(`${type}-${domain.id}-grid`);
+                domain.criteria.forEach(criteria => {
+                    const card = document.createElement('div');
+                    card.className = 'criteria-card';
+                    card.innerHTML = `
+                        <div class="criteria-score">${criteria.score}点</div>
+                        <div class="criteria-text">${criteria.text}</div>
+                    `;
+                    card.onclick = () => selectCriteria(type, domain.id, criteria.score);
+                    grid.appendChild(card);
+                });
+            });
+        }
+
+        // 基準の選択
+        function selectCriteria(type, domainId, score) {
+            const scores = type === 'before' ? beforeScores : afterScores;
+            scores[domainId] = score;
+
+            // 選択状態の更新
+            const grid = document.getElementById(`${type}-${domainId}-grid`);
+            const cards = grid.querySelectorAll('.criteria-card');
+            cards.forEach((card, index) => {
+                card.classList.toggle('selected', index + 1 === score);
+            });
+
+            // スコア表示の更新
+            document.getElementById(`${type}-${domainId}-score`).textContent = `${score}点`;
+
+            // 合計スコアの更新
+            updateTotalScore(type);
+            updateChart(type);
+        }
+
+        // 合計スコアの更新
+        function updateTotalScore(type) {
+            const scores = type === 'before' ? beforeScores : afterScores;
+            const total = Object.values(scores).reduce((sum, score) => sum + score, 0);
+            document.getElementById(`${type}-total`).textContent = `${total} / 15`;
+        }
+
+        // チャートの更新
+        function updateChart(type) {
+            const scores = type === 'before' ? beforeScores : afterScores;
+            const data = domains.map(d => scores[d.id] || 0);
+            const labels = domains.map(d => d.title.split('（')[0]);
+
+            const canvas = document.getElementById(`${type}-chart`);
+            const ctx = canvas.getContext('2d');
+
+            if (type === 'before' && beforeChart) {
+                beforeChart.destroy();
+            } else if (type === 'after' && afterChart) {
+                afterChart.destroy();
+            }
+
+            const chart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: type === 'before' ? 'Before評価' : 'After評価',
+                        data: data,
+                        backgroundColor: type === 'before' ? 'rgba(100, 181, 246, 0.2)' : 'rgba(129, 199, 132, 0.2)',
+                        borderColor: type === 'before' ? 'rgba(100, 181, 246, 1)' : 'rgba(129, 199, 132, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: type === 'before' ? 'rgba(100, 181, 246, 1)' : 'rgba(129, 199, 132, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: type === 'before' ? 'rgba(100, 181, 246, 1)' : 'rgba(129, 199, 132, 1)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 3,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+
+            if (type === 'before') {
+                beforeChart = chart;
+            } else {
+                afterChart = chart;
+            }
+        }
+
+        // 比較チャートの更新
+        function updateComparisonChart() {
+            const beforeData = domains.map(d => beforeScores[d.id] || 0);
+            const afterData = domains.map(d => afterScores[d.id] || 0);
+            const labels = domains.map(d => d.title.split('（')[0]);
+
+            const canvas = document.getElementById('comparison-chart');
+            const ctx = canvas.getContext('2d');
+
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+
+            comparisonChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Before評価',
+                            data: beforeData,
+                            backgroundColor: 'rgba(100, 181, 246, 0.2)',
+                            borderColor: 'rgba(100, 181, 246, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(100, 181, 246, 1)'
+                        },
+                        {
+                            label: 'After評価',
+                            data: afterData,
+                            backgroundColor: 'rgba(129, 199, 132, 0.2)',
+                            borderColor: 'rgba(129, 199, 132, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(129, 199, 132, 1)'
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 3,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 比較結果の更新
+        function updateComparison() {
+            const comparisonDiv = document.getElementById('score-comparison');
+            const summaryDiv = document.getElementById('growth-summary');
+
+            let comparisonHTML = '';
+            let improvements = 0;
+            let totalChange = 0;
+
+            domains.forEach(domain => {
+                const before = beforeScores[domain.id] || 0;
+                const after = afterScores[domain.id] || 0;
+                const change = after - before;
+                totalChange += change;
+
+                if (change > 0) improvements++;
+
+                const changeClass = change > 0 ? 'positive' : (change < 0 ? 'negative' : '');
+                const changeText = change > 0 ? `+${change}` : change;
+
+                comparisonHTML += `
+                    <div class="score-item">
+                        <span>${domain.title.split('（')[0]}</span>
+                        <span>${before}点 → ${after}点 <span class="score-change ${changeClass}">(${changeText})</span></span>
+                    </div>
+                `;
+            });
+
+            comparisonDiv.innerHTML = comparisonHTML;
+
+            const beforeTotal = Object.values(beforeScores).reduce((sum, s) => sum + s, 0);
+            const afterTotal = Object.values(afterScores).reduce((sum, s) => sum + s, 0);
+            const totalChangeValue = afterTotal - beforeTotal;
+            const totalChangeClass = totalChangeValue > 0 ? 'positive' : (totalChangeValue < 0 ? 'negative' : '');
+
+            summaryDiv.innerHTML = `
+                <div class="score-item">
+                    <span>合計スコア</span>
+                    <span>${beforeTotal}点 → ${afterTotal}点 <span class="score-change ${totalChangeClass}">(${totalChangeValue > 0 ? '+' : ''}${totalChangeValue})</span></span>
+                </div>
+                <div class="score-item">
+                    <span>改善したドメイン数</span>
+                    <span>${improvements} / 5</span>
+                </div>
+                <div class="score-item">
+                    <span>平均スコア</span>
+                    <span>${(beforeTotal / 5).toFixed(1)}点 → ${(afterTotal / 5).toFixed(1)}点</span>
+                </div>
+            `;
+
+            updateComparisonChart();
+        }
+
+        // すべてのチャートを更新
+        function updateAllCharts() {
+            updateChart('before');
+            updateChart('after');
+            updateComparison();
+        }
+
+        // タブの切り替え
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            if (tabName === 'comparison') {
+                updateComparison();
+            }
+        }
+
+        // Before評価を保存
+        function saveBeforeScore() {
+            if (Object.keys(beforeScores).length < 5) {
+                alert('すべてのドメインを評価してください。');
+                return;
+            }
+            localStorage.setItem('reactBeforeScores', JSON.stringify(beforeScores));
+            alert('Before評価を保存しました！');
+        }
+
+        // After評価を保存
+        function saveAfterScore() {
+            if (Object.keys(afterScores).length < 5) {
+                alert('すべてのドメインを評価してください。');
+                return;
+            }
+            localStorage.setItem('reactAfterScores', JSON.stringify(afterScores));
+            alert('After評価を保存しました！');
+        }
+
+        // 保存された評価を読み込み
+        function loadSavedScores() {
+            const savedBefore = localStorage.getItem('reactBeforeScores');
+            const savedAfter = localStorage.getItem('reactAfterScores');
+
+            if (savedBefore) {
+                beforeScores = JSON.parse(savedBefore);
+                Object.entries(beforeScores).forEach(([domainId, score]) => {
+                    selectCriteria('before', domainId, score);
+                });
+            }
+
+            if (savedAfter) {
+                afterScores = JSON.parse(savedAfter);
+                Object.entries(afterScores).forEach(([domainId, score]) => {
+                    selectCriteria('after', domainId, score);
+                });
+            }
+        }
+
+        // CSVエクスポート（Before）
+        function exportBeforeCSV() {
+            if (Object.keys(beforeScores).length < 5) {
+                alert('すべてのドメインを評価してください。');
+                return;
+            }
+            exportCSV(beforeScores, 'REACT_Before評価');
+        }
+
+        // CSVエクスポート（After）
+        function exportAfterCSV() {
+            if (Object.keys(afterScores).length < 5) {
+                alert('すべてのドメインを評価してください。');
+                return;
+            }
+            exportCSV(afterScores, 'REACT_After評価');
+        }
+
+        // CSV出力
+        function exportCSV(scores, filename) {
+            const total = Object.values(scores).reduce((sum, s) => sum + s, 0);
+            let csv = 'ドメイン,スコア\n';
+            domains.forEach(domain => {
+                csv += `${domain.title},${scores[domain.id] || 0}\n`;
+            });
+            csv += `合計,${total}\n`;
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // 比較レポート出力
+        function exportComparisonReport() {
+            if (Object.keys(beforeScores).length < 5 || Object.keys(afterScores).length < 5) {
+                alert('BeforeとAfter両方の評価を完了してください。');
+                return;
+            }
+
+            const beforeTotal = Object.values(beforeScores).reduce((sum, s) => sum + s, 0);
+            const afterTotal = Object.values(afterScores).reduce((sum, s) => sum + s, 0);
+            const totalChange = afterTotal - beforeTotal;
+
+            let markdown = `# REACT 臨床推論レベル評価 比較レポート\n\n`;
+            markdown += `**評価日**: ${new Date().toLocaleDateString('ja-JP')}\n\n`;
+            markdown += `---\n\n`;
+            markdown += `## 📊 総合スコア\n\n`;
+            markdown += `- **Before**: ${beforeTotal} / 15点\n`;
+            markdown += `- **After**: ${afterTotal} / 15点\n`;
+            markdown += `- **変化**: ${totalChange > 0 ? '+' : ''}${totalChange}点\n\n`;
+            markdown += `---\n\n`;
+            markdown += `## 📈 ドメイン別スコア\n\n`;
+            markdown += `| ドメイン | Before | After | 変化 |\n`;
+            markdown += `|---------|--------|-------|------|\n`;
+
+            domains.forEach(domain => {
+                const before = beforeScores[domain.id] || 0;
+                const after = afterScores[domain.id] || 0;
+                const change = after - before;
+                markdown += `| ${domain.title} | ${before}点 | ${after}点 | ${change > 0 ? '+' : ''}${change}点 |\n`;
+            });
+
+            markdown += `\n---\n\n`;
+            markdown += `## 💡 成長サマリー\n\n`;
+
+            const improvements = domains.filter(d => (afterScores[d.id] || 0) > (beforeScores[d.id] || 0));
+            if (improvements.length > 0) {
+                markdown += `### 改善したドメイン（${improvements.length} / 5）\n\n`;
+                improvements.forEach(domain => {
+                    const change = afterScores[domain.id] - beforeScores[domain.id];
+                    markdown += `- **${domain.title}**: +${change}点の向上\n`;
+                });
+                markdown += `\n`;
+            }
+
+            const maintained = domains.filter(d => (afterScores[d.id] || 0) === (beforeScores[d.id] || 0));
+            if (maintained.length > 0) {
+                markdown += `### 維持したドメイン（${maintained.length} / 5）\n\n`;
+                maintained.forEach(domain => {
+                    markdown += `- **${domain.title}**: ${beforeScores[domain.id]}点を維持\n`;
+                });
+                markdown += `\n`;
+            }
+
+            markdown += `---\n\n`;
+            markdown += `**🤖 Generated by REACT臨床推論レベル評価ツール**\n`;
+
+            // ダウンロード
+            const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `REACT比較レポート_${new Date().toISOString().split('T')[0]}.md`;
+            link.click();
+
+            alert('比較レポートをダウンロードしました！');
+        }
+
+        // 初期化実行
+        init();
+    </script>
+</body>
+</html>
