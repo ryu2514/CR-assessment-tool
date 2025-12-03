@@ -53,4 +53,4 @@ Copyright © 2025 小林リュージュ
 
 ---
 
-**🤖 Developed for ステップアップ講座**
+**🤖 Developed for Think Clarity**
