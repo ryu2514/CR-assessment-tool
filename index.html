@@ -158,6 +158,30 @@
             font-size: 3em;
             font-weight: bold;
         }
+        .score-level-badge {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .score-level-badge.needs-improvement {
+            background: #ff9800;
+            color: white;
+        }
+        .score-level-badge.goal-achieved {
+            background: #4caf50;
+            color: white;
+        }
+        .score-feedback {
+            margin-top: 15px;
+            font-size: 0.95em;
+            line-height: 1.6;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
         .chart-container {
             max-width: 600px;
             margin: 30px auto;
@@ -362,6 +386,7 @@
             <h3>📋 評価方法</h3>
             <p>各ドメインについて、現在のあなたの臨床推論レベルに最も近い項目を選択してください。</p>
             <p>スコアは1-3点の3段階で、合計スコアは5点（最小）〜15点（最大）となります。</p>
+            <p><strong>📊 基準値：</strong>12点以下は「要改善レベル」、<strong>13点以上が「講座目標レベル」</strong>です。レーダーチャートにオレンジの点線で目標レベル（平均2.6点/ドメイン）が表示されます。</p>
         </div>
 
         <div class="tab-container">
@@ -377,6 +402,8 @@
             <div class="total-score-section">
                 <div class="total-score-label">合計スコア</div>
                 <div class="total-score-value" id="before-total">0 / 15</div>
+                <div id="before-level-badge"></div>
+                <div id="before-feedback" class="score-feedback"></div>
             </div>
             <div class="chart-container">
                 <canvas id="before-chart"></canvas>
@@ -394,6 +421,8 @@
             <div class="total-score-section">
                 <div class="total-score-label">合計スコア</div>
                 <div class="total-score-value" id="after-total">0 / 15</div>
+                <div id="after-level-badge"></div>
+                <div id="after-feedback" class="score-feedback"></div>
             </div>
             <div class="chart-container">
                 <canvas id="after-chart"></canvas>
@@ -553,6 +582,68 @@
             const scores = type === 'before' ? beforeScores : afterScores;
             const total = Object.values(scores).reduce((sum, score) => sum + score, 0);
             document.getElementById(`${type}-total`).textContent = `${total} / 15`;
+
+            // レベル判定とフィードバック表示
+            updateScoreLevel(type, total);
+        }
+
+        // スコアレベルの判定とフィードバック表示
+        function updateScoreLevel(type, total) {
+            const badgeElement = document.getElementById(`${type}-level-badge`);
+            const feedbackElement = document.getElementById(`${type}-feedback`);
+
+            if (total === 0) {
+                badgeElement.innerHTML = '';
+                feedbackElement.innerHTML = '';
+                return;
+            }
+
+            let badgeHTML = '';
+            let feedbackHTML = '';
+
+            if (total <= 12) {
+                // 要改善レベル（12点以下）
+                badgeHTML = '<div class="score-level-badge needs-improvement">⚠️ 要改善レベル</div>';
+
+                if (total <= 7) {
+                    feedbackHTML = `
+                        <strong>現状：</strong>臨床推論の基本的な構造が身についていない状態です。<br>
+                        <strong>課題：</strong>評価データの収集はできても、解釈や判断が弱く、言語化が難しい状況です。<br>
+                        <strong>目標：</strong>Think Clarityプログラムで13点以上（講座目標レベル）を目指しましょう。
+                    `;
+                } else if (total <= 9) {
+                    feedbackHTML = `
+                        <strong>現状：</strong>基本的な臨床推論はできますが、説明が不十分です。<br>
+                        <strong>課題：</strong>「なぜその判断をしたか」を言語化できない状態です（経験年数3-5年目の平均的なレベル）。<br>
+                        <strong>目標：</strong>Think Clarityプログラムで13点以上（講座目標レベル）を目指しましょう。
+                    `;
+                } else {
+                    feedbackHTML = `
+                        <strong>現状：</strong>臨床推論の基本構造は身についていますが、まだ改善の余地があります。<br>
+                        <strong>目標：</strong>あと少しで講座目標レベル（13点以上）です。Think Clarityプログラムで最後の一押しを！
+                    `;
+                }
+            } else {
+                // 講座目標レベル達成（13点以上）
+                badgeHTML = '<div class="score-level-badge goal-achieved">✅ 講座目標レベル達成</div>';
+
+                if (total <= 13) {
+                    feedbackHTML = `
+                        <strong>素晴らしい！</strong>高度な臨床推論能力を持っています。<br>
+                        複雑な症例でも論理的に説明でき、患者への説明や後輩指導も十分にできるレベルです。<br>
+                        さらなる高みを目指すなら、エキスパートレベル（14-15点）を目指しましょう。
+                    `;
+                } else {
+                    feedbackHTML = `
+                        <strong>エキスパートレベル！</strong>臨床推論のエキスパートです。<br>
+                        指導者・教育者として活躍できるレベルに達しています。<br>
+                        この能力を維持しながら、後輩の育成にも力を注いでください。
+                    `;
+                }
+            }
+
+            badgeElement.innerHTML = badgeHTML;
+            feedbackElement.innerHTML = feedbackHTML;
         }
 
         // チャートの更新
@@ -574,17 +665,29 @@
                 type: 'radar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: type === 'before' ? 'Before評価' : 'After評価',
-                        data: data,
-                        backgroundColor: type === 'before' ? 'rgba(100, 181, 246, 0.2)' : 'rgba(129, 199, 132, 0.2)',
-                        borderColor: type === 'before' ? 'rgba(100, 181, 246, 1)' : 'rgba(129, 199, 132, 1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: type === 'before' ? 'rgba(100, 181, 246, 1)' : 'rgba(129, 199, 132, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: type === 'before' ? 'rgba(100, 181, 246, 1)' : 'rgba(129, 199, 132, 1)'
-                    }]
+                    datasets: [
+                        {
+                            label: type === 'before' ? 'Before評価' : 'After評価',
+                            data: data,
+                            backgroundColor: type === 'before' ? 'rgba(100, 181, 246, 0.2)' : 'rgba(129, 199, 132, 0.2)',
+                            borderColor: type === 'before' ? 'rgba(100, 181, 246, 1)' : 'rgba(129, 199, 132, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: type === 'before' ? 'rgba(100, 181, 246, 1)' : 'rgba(129, 199, 132, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: type === 'before' ? 'rgba(100, 181, 246, 1)' : 'rgba(129, 199, 132, 1)'
+                        },
+                        {
+                            label: '講座目標レベル (13点)',
+                            data: [2.6, 2.6, 2.6, 2.6, 2.6],
+                            backgroundColor: 'rgba(255, 152, 0, 0.05)',
+                            borderColor: 'rgba(255, 152, 0, 0.8)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        }
+                    ]
                 },
                 options: {
                     scales: {
@@ -645,6 +748,16 @@
                             borderColor: 'rgba(129, 199, 132, 1)',
                             borderWidth: 2,
                             pointBackgroundColor: 'rgba(129, 199, 132, 1)'
+                        },
+                        {
+                            label: '講座目標レベル (13点)',
+                            data: [2.6, 2.6, 2.6, 2.6, 2.6],
+                            backgroundColor: 'rgba(255, 152, 0, 0.05)',
+                            borderColor: 'rgba(255, 152, 0, 0.8)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            pointHoverRadius: 0
                         }
                     ]
                 },
