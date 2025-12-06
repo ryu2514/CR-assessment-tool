@@ -262,6 +262,126 @@
             background: #229954;
         }
 
+        /* 改善タスク表示セクション */
+        .improvement-section {
+            background: #fff9e6;
+            border: 2px solid #ffa726;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .improvement-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #f57c00;
+        }
+        .improvement-header h3 {
+            margin: 0;
+            font-size: 1.4em;
+        }
+        .improvement-intro {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffa726;
+        }
+        .domain-improvement {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+        .domain-improvement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .domain-improvement-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .current-score-badge {
+            background: #ff9800;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .task-item:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+        }
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            border: 2px solid #64b5f6;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 2px;
+        }
+        .task-checkbox:hover {
+            background: #e3f2fd;
+        }
+        .task-content {
+            flex: 1;
+        }
+        .task-text {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 5px;
+        }
+        .task-priority {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .task-priority.high {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .task-priority.medium {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        .no-improvements {
+            text-align: center;
+            padding: 30px;
+            color: #27ae60;
+            font-size: 1.1em;
+        }
+        .no-improvements .emoji {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
         /* スマホ対応（768px以下） */
         @media (max-width: 768px) {
             body {
@@ -351,6 +471,29 @@
                 width: 100%;
                 padding: 15px 20px;
             }
+            .improvement-section {
+                padding: 15px;
+            }
+            .improvement-header h3 {
+                font-size: 1.1em;
+            }
+            .domain-improvement {
+                padding: 15px;
+            }
+            .domain-improvement-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .domain-improvement-title {
+                font-size: 1em;
+            }
+            .task-item {
+                padding: 10px;
+            }
+            .task-text {
+                font-size: 0.9em;
+            }
         }
 
         /* さらに小さい画面（480px以下） */
@@ -408,6 +551,10 @@
             <div class="chart-container">
                 <canvas id="before-chart"></canvas>
             </div>
+
+            <!-- 改善タスク表示セクション -->
+            <div id="before-improvement-section"></div>
+
             <div class="button-group">
                 <button class="btn btn-primary" onclick="saveBeforeScore()">Before評価を保存</button>
                 <button class="btn btn-secondary" onclick="exportBeforeCSV()">CSVエクスポート</button>
@@ -427,6 +574,10 @@
             <div class="chart-container">
                 <canvas id="after-chart"></canvas>
             </div>
+
+            <!-- 改善タスク表示セクション -->
+            <div id="after-improvement-section"></div>
+
             <div class="button-group">
                 <button class="btn btn-success" onclick="saveAfterScore()">After評価を保存</button>
                 <button class="btn btn-secondary" onclick="exportAfterCSV()">CSVエクスポート</button>
@@ -465,7 +616,20 @@
                     { score: 1, text: '何を評価すべきかわからず、手当たり次第に評価している。患者の訴えや状況から必要な評価を絞れない。' },
                     { score: 2, text: '仮説に関連する評価はできるが、余計な評価も多い。重要な評価を見逃すこともある。' },
                     { score: 3, text: '患者の訴えや状況から仮説を立て、必要な評価だけを効率的に実施できる。' }
-                ]
+                ],
+                improvementTasks: {
+                    1: [
+                        { task: '問診テンプレートを作成し、系統的な情報収集を練習する', priority: 'high' },
+                        { task: 'SOAPのS（主観的情報）の記録を毎回丁寧に書く練習をする', priority: 'high' },
+                        { task: 'Red Flag（危険サイン）のチェックリストを作成し、必ず確認する習慣をつける', priority: 'high' },
+                        { task: '先輩の問診・評価を観察し、どのような順序で情報を集めているか学ぶ', priority: 'medium' }
+                    ],
+                    2: [
+                        { task: '評価前に「今日確認すべき3つのポイント」を事前に決める習慣をつける', priority: 'high' },
+                        { task: 'Red Flagを見逃していないか、毎回セルフチェックする', priority: 'high' },
+                        { task: '仮説検証型の評価手順を意識し、無駄な評価を減らす練習をする', priority: 'medium' }
+                    ]
+                }
             },
             {
                 id: 'interpreting',
@@ -475,7 +639,20 @@
                     { score: 1, text: '評価結果から問題点（機能障害・能力低下）を特定できない、または的外れな解釈をしてしまう。' },
                     { score: 2, text: '主な問題点は見つけられるが、重要な問題を見逃すこともある。優先順位付けが不十分。' },
                     { score: 3, text: '評価結果から問題点を正確に特定し、優先順位をつけて整理できる。' }
-                ]
+                ],
+                improvementTasks: {
+                    1: [
+                        { task: '症例ディスカッションに積極的に参加し、問題点の整理方法を学ぶ', priority: 'high' },
+                        { task: '鑑別リストを毎回作成する練習をする（最低3つの鑑別を考える）', priority: 'high' },
+                        { task: '問題表現（Problem Representation）の練習：「〇〇を呈する××歳の患者」形式で整理する', priority: 'high' },
+                        { task: '評価結果を「機能障害」「活動制限」「参加制約」に分類して整理する', priority: 'medium' }
+                    ],
+                    2: [
+                        { task: '重要度・緊急度マトリクスで問題点を整理し、優先順位をつける練習をする', priority: 'high' },
+                        { task: '先輩に「他に考えられる鑑別はないか？」とフィードバックをもらう', priority: 'medium' },
+                        { task: '症例発表時に、必ず鑑別リストと問題表現を含める', priority: 'medium' }
+                    ]
+                }
             },
             {
                 id: 'managing',
@@ -485,7 +662,20 @@
                     { score: 1, text: '問題点に対して的外れな治療計画を立ててしまう。治療の効果を確認できていない。' },
                     { score: 2, text: '必要な治療は選べるが、優先順位付けが不十分。治療効果の確認も不完全。' },
                     { score: 3, text: '問題点に対して優先度の高い治療を効率的に実施し、効果を確認できる。' }
-                ]
+                ],
+                improvementTasks: {
+                    1: [
+                        { task: 'Red Flagを系統的に学び、「リハで完結してはいけないケース」の判断基準を明確にする', priority: 'high' },
+                        { task: '紹介基準・救急搬送基準を確認し、いつ医師にコンサルトすべきか学ぶ', priority: 'high' },
+                        { task: '治療前後で必ず測定指標（疼痛、ROM、筋力など）を記録し、効果判定する習慣をつける', priority: 'high' },
+                        { task: '治療計画を立てる際、必ず「短期目標（1-2週間）」と「測定方法」を明記する', priority: 'medium' }
+                    ],
+                    2: [
+                        { task: '優先順位の高い問題から順に治療する習慣をつける（緊急度・重要度を毎回確認）', priority: 'high' },
+                        { task: '治療効果を定量的に測定する方法を学ぶ（VAS、ROM、筋力、歩行速度など）', priority: 'medium' },
+                        { task: '計画した治療が効果を示さない場合の「プランB」を事前に考える習慣をつける', priority: 'medium' }
+                    ]
+                }
             },
             {
                 id: 'communicating',
@@ -495,7 +685,20 @@
                     { score: 1, text: '他職種（医師・看護師など）との連携ができず、患者への説明も不十分。患者の希望を聞けていない。' },
                     { score: 2, text: '他職種との連携や患者への説明が不完全。患者の希望を聞くが、治療計画に反映しきれていない。' },
                     { score: 3, text: '他職種と効果的に連携し、患者にわかりやすく説明できる。患者・家族の希望を治療に反映できる。' }
-                ]
+                ],
+                improvementTasks: {
+                    1: [
+                        { task: 'SBARフォーマットでケースプレゼンの練習をする（Situation, Background, Assessment, Recommendation）', priority: 'high' },
+                        { task: '患者への説明時に「teach-back法」を使う：患者に説明内容を自分の言葉で言い直してもらう', priority: 'high' },
+                        { task: '多職種カンファレンスに積極的に参加し、連携の方法を学ぶ', priority: 'high' },
+                        { task: '患者の「希望・目標」を毎回確認し、カルテに記録する習慣をつける', priority: 'medium' }
+                    ],
+                    2: [
+                        { task: 'コンサルト時に「問題表現＋鑑別＋こちらの懸念」を簡潔に伝える練習をする', priority: 'high' },
+                        { task: '患者・家族への説明を先輩に観察してもらい、フィードバックをもらう', priority: 'medium' },
+                        { task: '共有意思決定（SDM）の方法を学び、治療選択肢を複数提示する練習をする', priority: 'medium' }
+                    ]
+                }
             },
             {
                 id: 'reflecting',
@@ -505,7 +708,20 @@
                     { score: 1, text: '自分の評価・治療の判断を振り返ることができない。「なぜうまくいかなかったか」を考えられない。' },
                     { score: 2, text: 'ある程度振り返れるが、「次にどう改善するか」まで考えられない。同じ失敗を繰り返しがち。' },
                     { score: 3, text: '自分の判断を客観的に振り返り、「なぜそう判断したか」「次はどうするか」を明確にできる。' }
-                ]
+                ],
+                improvementTasks: {
+                    1: [
+                        { task: '症例ごとに「振り返りシート」を作成する：①うまくいった点 ②改善点 ③次回の行動計画', priority: 'high' },
+                        { task: '毎日の診療終了後に5分間、「今日の3つの学び」をメモする習慣をつける', priority: 'high' },
+                        { task: 'アンカリング（思い込み）や早期閉鎖（性急な判断）がなかったか、毎週セルフチェックする', priority: 'medium' },
+                        { task: '先輩に「自分の判断プロセス」を説明し、フィードバックをもらう機会を作る', priority: 'medium' }
+                    ],
+                    2: [
+                        { task: '失敗ケースを分析し、「なぜそう判断したか」「バイアスはなかったか」を振り返る', priority: 'high' },
+                        { task: '「次に同じケースが来たら何を変えるか」を具体的に言語化する練習をする', priority: 'high' },
+                        { task: '月1回、自分の症例を振り返り、パターンや傾向を分析する時間を作る', priority: 'medium' }
+                    ]
+                }
             }
         ];
 
@@ -521,6 +737,8 @@
             createAssessment('after');
             loadSavedScores();
             updateAllCharts();
+            updateImprovementTasks('before');
+            updateImprovementTasks('after');
         }
 
         // 評価フォームの作成
@@ -585,6 +803,9 @@
 
             // レベル判定とフィードバック表示
             updateScoreLevel(type, total);
+
+            // 改善タスクの表示
+            updateImprovementTasks(type);
         }
 
         // スコアレベルの判定とフィードバック表示
@@ -926,6 +1147,104 @@
             link.href = URL.createObjectURL(blob);
             link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
+        }
+
+        // 改善タスクの表示
+        function updateImprovementTasks(type) {
+            const scores = type === 'before' ? beforeScores : afterScores;
+            const sectionElement = document.getElementById(`${type}-improvement-section`);
+
+            // スコアが入力されていない場合は非表示
+            if (Object.keys(scores).length === 0) {
+                sectionElement.innerHTML = '';
+                return;
+            }
+
+            // 3点満点でないドメインを収集
+            const improvementNeeded = domains.filter(domain => {
+                const score = scores[domain.id];
+                return score && score < 3;
+            });
+
+            // すべて3点の場合
+            if (improvementNeeded.length === 0) {
+                sectionElement.innerHTML = `
+                    <div class="improvement-section">
+                        <div class="no-improvements">
+                            <div class="emoji">🎉</div>
+                            <div><strong>素晴らしい！</strong></div>
+                            <div>すべてのドメインで満点を達成しています。この高いレベルを維持しましょう！</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 改善タスクセクションの構築
+            let html = `
+                <div class="improvement-section">
+                    <div class="improvement-header">
+                        <span style="font-size: 1.8em;">💡</span>
+                        <h3>あなたの成長プラン</h3>
+                    </div>
+                    <div class="improvement-intro">
+                        <p><strong>レーダーチャートで弱点が判明しました。</strong>以下のタスクに取り組むことで、臨床推論スキルを向上させることができます。</p>
+                        <p style="margin-top: 10px; color: #666;">優先度の高いタスクから順に取り組みましょう。チェックボックスをクリックして進捗を記録できます。</p>
+                    </div>
+            `;
+
+            improvementNeeded.forEach(domain => {
+                const score = scores[domain.id];
+                const tasks = domain.improvementTasks[score] || [];
+                const priorityLabel = score === 1 ? '優先度：緊急' : '優先度：高';
+
+                html += `
+                    <div class="domain-improvement">
+                        <div class="domain-improvement-header">
+                            <div class="domain-improvement-title">${domain.title}</div>
+                            <div class="current-score-badge">現在 ${score}/3点 - ${priorityLabel}</div>
+                        </div>
+                        <ul class="task-list">
+                `;
+
+                tasks.forEach((taskItem, index) => {
+                    const priorityText = taskItem.priority === 'high' ? '優先度：高' : '優先度：中';
+                    html += `
+                        <li class="task-item">
+                            <div class="task-checkbox" onclick="toggleTaskCheck(this)"></div>
+                            <div class="task-content">
+                                <div class="task-text">${taskItem.task}</div>
+                                <span class="task-priority ${taskItem.priority}">${priorityText}</span>
+                            </div>
+                        </li>
+                    `;
+                });
+
+                html += `
+                        </ul>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            sectionElement.innerHTML = html;
+        }
+
+        // タスクチェックボックスのトグル
+        function toggleTaskCheck(checkbox) {
+            if (checkbox.innerHTML === '✓') {
+                checkbox.innerHTML = '';
+                checkbox.style.background = '';
+            } else {
+                checkbox.innerHTML = '✓';
+                checkbox.style.background = '#64b5f6';
+                checkbox.style.color = 'white';
+                checkbox.style.display = 'flex';
+                checkbox.style.alignItems = 'center';
+                checkbox.style.justifyContent = 'center';
+                checkbox.style.fontSize = '14px';
+                checkbox.style.fontWeight = 'bold';
+            }
         }
 
         // 比較レポート出力
